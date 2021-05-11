@@ -1,0 +1,42 @@
+def gcimg
+
+@Library('parityGlobalLibrary@ELC_1372_ModifyDockerBuild') _
+pipeline {
+    agent {
+        label 'ip-build-agent'
+    }
+
+  environment {
+    WORKSPACE                 = "${env.WORKSPACE}"
+    SVC_ACC                   = credentials('svc_account_name')
+    ARTIFACTORY_API_TOKEN     = credentials('artifactory_api_token')
+    DOCKER_REGISTRY           = "docker-genericlass-parity-local.rt.artifactory.tio.systems"
+    IMAGE_ID                  = "gc"
+    IMAGE_NAME                = "${DOCKER_REGISTRY}/${IMAGE_ID}"
+    IMAGE_TAG                 = "latest"
+    ARTIFACTORY_CREDENTIAL    = "artifactory_svc_credential"
+  }
+
+  stages {
+  
+     stage('Docker build'){
+        steps {
+            script  {
+                         gcimg = docker.build("${IMAGE_NAME}", "-f ./Dockerfile_ia .")
+                    }
+             }
+        }        
+    
+    stage('Docker tag and push in master branch') {
+        steps {
+            script {
+						sh '''
+						aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 988363732552.dkr.ecr.us-east-1.amazonaws.com/generic-classifier
+						docker tag docker-genericlass-parity-local.rt.artifactory.tio.systems/gc:latest  988363732552.dkr.ecr.us-east-1.amazonaws.com/generic-classifier:latest
+						docker push 988363732552.dkr.ecr.us-east-1.amazonaws.com/generic-classifier:latest
+						'''
+                    }          
+        }
+    }  
+  }
+}

@@ -1,0 +1,137 @@
+pipeline {
+  agent any
+
+  options {
+        ansiColor("xterm")
+    }
+  
+  environment {
+    WORKSPACE = "${env.WORKSPACE}"
+    TAG = VersionNumber(versionNumberString: '${BUILDS_ALL_TIME_Z}', versionPrefix: "1.", worstResultForIncrement: "SUCCESS")
+    REPO_NAME = "generic-classifier"
+  }
+  
+  stages {
+
+    stage('Python stage'){
+        agent {
+           label 'python'
+        }
+        steps {
+          container('python-slave') {
+            script {
+              stage('Lint'){  
+                    sh '''
+                    cd ${WORKSPACE}
+                    pip install pylint
+                    pip install pylint-fail-under
+                    pylint-fail-under --fail_under 6 classifyGenericModified.py \
+                    container/predictor.py \
+                    container/serve \
+                    container/wsgi.py \
+                    model.py \
+                    test/config.py \
+                    test/conftest.py \
+                    test/pytest.ini \
+                    test/settings.py \
+                    test/integration/tests_gc/base_test.py \
+                    test/integration/tests_gc/tests_batches.py  \
+                    test/integration/tests_gc/tests_end_points.py  \
+                    test/integration/tests_gc/tests_functionality.py  \
+                    test/integration/tests_gc/tests_lb_asyncio.py  \
+                    test/integration/tests_gc/tests_lb_threads.py  \
+                    test/integration/tests_gc/tests_recurring.py  > ${WORKSPACE}/sonar-report-task.txt'''
+              }
+              stash includes: "**/sonar-report-task.txt", name: "PYLINT_REPORT"
+
+              stage ('Unit Tests'){
+                  sh '''
+                    pip install allure-pytest==2.8.16
+                    pip install pytest-cov
+                    pip install joblib==0.14.0
+                    pip install flask==1.1.2
+                    export PYTHONPATH=\${WORKSPACE}/container:$PYTHONPATH
+                    cd ${WORKSPACE}/unit_tests
+                    coverage run -a --source=../.. -m pytest -v -m unit_tests
+                    coverage xml -o coverage.xml
+                    coverage xml -i
+                    cp coverage.xml ../
+                    cd ../'''
+              }
+              stash includes: "**/coverage.xml", name: "COVERAGE_XML"
+            }
+          }
+        }  
+    }
+
+    stage ('SonarQube Analysis'){
+              agent {
+                  label 'java'
+              }
+                environment {
+                    SCANNER_HOME = tool('SQ 4.2')
+                }
+                steps {
+                container('java-slave') {
+                  withSonarQubeEnv('ETTT') {
+                        unstash "COVERAGE_XML"
+                        unstash "PYLINT_REPORT"
+                        sh """${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=ip:dp-${REPO_NAME} \
+                        -Dsonar.projectName=ip:dp-${REPO_NAME} \
+                        -Dsonar.language=py \
+                        -Dsonar.branch.name=$BRANCH_NAME \
+                        -Dsonar.login=${SONAR_AUTH_TOKEN} \
+                        -Dsonar.projectVersion=1.0 \
+                        -Dsonar.scm.disabled=true \
+                        -Dsonar.verbose=false \
+                        -Dsonar.log.level=INFO \
+                        -Dsonar.projectBaseDir="${WORKSPACE}" \
+                        -Dsonar.sources=classifyGenericModified.py,model.py,container,test,unit_tests \
+                        -Dsonar.host.url=https://sq.prod.tio.elsevier.systems \
+                        -Dsonar.sourceEncoding=UTF-8 \
+                        -Dsonar.exclusions=data/**,dicts/**,model/**,notebooks/**,scripts/**,test/**,unit_tests/** \
+                        -Dsonar.python.pylint.reportPath="${WORKSPACE}/report-task.txt" \
+                        -Dsonar.python.coverage.reportPaths="${WORKSPACE}/coverage.xml"
+                        """
+                    }
+                }
+              }
+            }
+
+            stage("Run CheckMarx"){
+            agent {
+                label "java"
+            }
+            steps {
+               container("java-slave") {
+                   scmSkip(deleteBuild: true)
+                   git(branch: "${env.BRANCH_NAME}", credentialsId: "github", url: "https://github.com/elsevier-research/dp-ip-service-matcherapi.git")        
+                 
+                   step([$class: 'CxScanBuilder', failBuildOnNewSeverity: 'HIGH', groupId: '687ac445-abcc-49fb-ba42-68fe612a0ad9', preset: '36', waitForResultsEnabled: true, sastEnabled: true, projectName: 'dp-ip-service-matcherapi'])
+ 
+                   // Stash files for use in the Docker build stage
+                   stash includes: "target/*.jar, Dockerfile", name: "DOCKER_ARTEFACTS"
+                }
+            }
+        }
+
+        stage("Build and publish Docker image"){
+            agent {
+                label "kaniko"
+            }
+            environment {
+                PATH = "/busybox:/kaniko:$PATH"
+                SNAPSHOT = "docker-dp-common-snapshots-local.rt.artifactory.tio.systems"
+                RELEASE = "docker-dp-common-releases-local.rt.artifactory.tio.systems"
+                DESTINATION = "${env.BRANCH_NAME == "master" ? RELEASE : SNAPSHOT }"
+            }
+            steps {
+                container(name: "kaniko", shell: "/busybox/sh") {
+                    sh "executor --context=. --destination=$DESTINATION/$REPO_NAME:$TAG"
+                }
+            }
+        }
+
+  }
+}

@@ -1,0 +1,81 @@
+def gc_golden_image
+
+@Library('parityGlobalLibrary@ELC_1372_ModifyDockerBuild') _
+pipeline {
+    agent {
+        label 'gc-packer-agent'
+    }
+
+  environment {
+    SVC_ACC                   = credentials('svc_account_name')
+    ARTIFACTORY_API_TOKEN     = credentials('artifactory_api_token')
+    DOCKER_REGISTRY           = "docker-genericlass-parity-local.rt.artifactory.tio.systems"
+    GC_CONTAINER_NAME         = "gc"
+  }
+
+  stages {
+
+    stage('Rollback for UAT 1') {
+      options {
+        timeout(time: 30, unit: 'MINUTES')
+      }
+      when {
+            branch 'master'
+      }
+      steps {
+        script {
+            try {
+                input message: 'Are you sure you want to rollback?'
+                echo 'Rollback in progress...'
+                slackSend (color: "#FFFF00", channel: '#electron_gc_squad_ci', message: "STARTED Rollback for UAT 1. Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}")
+
+                    String ip = pemKeyPushForSsh('id_rsa', '/gc/uat/gc_uat_keypair', '/gc/uat/gc_1a_ip', 'us-east-1', 'centos')
+                            sh ("""
+                            ssh -tt centos@$ip <<-EOF
+                               docker login ${DOCKER_REGISTRY} -u ${SVC_ACC} -p ${ARTIFACTORY_API_TOKEN} && \
+                                docker stop ${GC_CONTAINER_NAME} && \
+                                 docker rm -f ${GC_CONTAINER_NAME} && \
+                                  sudo docker run -d -v /opt/ml/model/:/opt/ml/model/ -p 8080:8080 -e MODEL_SERVER_WORKERS=1 -e MODEL_SERVER_TIMEOUT=600 --name ${GC_CONTAINER_NAME} ${DOCKER_REGISTRY}/gc:`aws ssm get-parameter --with-decryption --name /gc/uat/gc_golden_dockerTag --region us-east-1 --query Parameter.Value --output text` serve && \
+                                  exit && \
+                            EOF""")
+                } catch (e)     {
+                   slackSend (color: "danger",channel: '#electron_gc_squad_ci', message: "FAILED Rollback for UAT 1. Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}")
+                   throw e
+            }
+            slackSend (color: "good", channel: '#electron_gc_squad_ci', message: "COMPLETED Rollback for UAT 1. Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}")			
+        }
+      }     
+    }
+    
+    stage('Rollback for UAT 2') {
+      options {
+        timeout(time: 30, unit: 'MINUTES')
+      }
+      when {
+            branch 'master'
+      }
+      steps {
+        script {
+            try {
+                slackSend (color: "#FFFF00", channel: '#electron_gc_squad_ci', message: "STARTED Rollback for UAT 2. Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}")
+			
+                    String ip = pemKeyPushForSsh('id_rsa', '/gc/uat/gc_uat_keypair', '/gc/uat/gc_1b_ip', 'us-east-1', 'centos')
+                            sh ("""
+                            ssh -tt centos@$ip <<-EOF
+                               docker login ${DOCKER_REGISTRY} -u ${SVC_ACC} -p ${ARTIFACTORY_API_TOKEN} && \
+                                docker stop ${GC_CONTAINER_NAME} && \
+                                 docker rm -f ${GC_CONTAINER_NAME} && \
+                                  sudo docker run -d -v /opt/ml/model/:/opt/ml/model/ -p 8080:8080 -e MODEL_SERVER_WORKERS=1 -e MODEL_SERVER_TIMEOUT=600 --name ${GC_CONTAINER_NAME} ${DOCKER_REGISTRY}/gc:`aws ssm get-parameter --with-decryption --name /gc/uat/gc_golden_dockerTag --region us-east-1 --query Parameter.Value --output text` serve && \
+                                  exit && \
+                            EOF""")
+                
+            } catch (e)     {
+                   slackSend (color: "danger",channel: '#electron_gc_squad_ci', message: "FAILED Rollback for UAT 2. Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}")
+                   throw e
+            }
+            slackSend (color: "good", channel: '#electron_gc_squad_ci', message: "COMPLETED Rollback for UAT 2. Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}")			
+        }
+      }     
+    }
+  }
+}

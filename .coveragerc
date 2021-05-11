@@ -1,0 +1,13 @@
+[run]
+omit = notebooks/*
+       data/*
+       dicts/*
+       model/*
+       scripts/*
+       test/*
+       unit_tests/*
+       /usr/local/lib/python3.7/*
+       /usr/lib/python3/*
+source = classifyGenericModified.py
+         model.py
+         container/

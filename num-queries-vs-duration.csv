@@ -1,0 +1,33 @@
+﻿Dataset;Classifier;Num queries;Durations;Precision;Recall
+MEDLINE;Baseline;67870;18254;0.9294;0.8907
+ANI;Baseline;59963;18089;0.9275;0.8905
+ANI SUPP;Baseline;32114;10794;0.9156;0.8685
+ANI CEC;Baseline;64561;20492;0.9149;0.8634
+GRANTS;Baseline;10595;8491;0.9217;0.7001
+MEDLINE;Expanded subject;67854;17885;;
+ANI;Expanded subject;59962;19161;;
+ANI SUPP;Expanded subject;32110;10589;;
+ANI CEC;Expanded subject;64519;26113;;
+GRANTS;Expanded subject;15513;16562;;
+MEDLINE;Gold standard;56417;24469;;
+ANI;Gold standard;47168;16809;;
+MEDLINE;Hybrid Classifier;61739;26354;;
+ANI;Hybrid Classifier;58725;14048;;
+ANI SUPP;Hybrid Classifier;30823;9455;;
+ANI CEC;Hybrid Classifier;59209;15984;;
+GRANTS;Hybrid Classifier;19018;12493;;
+MEDLINE;Hybrid Classifier - Linear Weighted;36015;17488;0.9296;0.8884
+ANI;Hybrid Classifier - Linear Weighted;31757;11206;0.9290;0.8884
+ANI SUPP;Hybrid Classifier - Linear Weighted;16552;5926;0.9137;0.8620
+ANI CEC;Hybrid Classifier - Linear Weighted;33348;9956;0.9151;0.8627
+GRANTS;Hybrid Classifier - Linear Weighted;8007;3971;0.9211;0.6986
+MEDLINE;Hybrid Classifier - Monolingual;40927;17069;;
+ANI;Hybrid Classifier - Monolingual;37039;10523;;
+ANI SUPP;Hybrid Classifier - Monolingual;19380;5084;;
+ANI CEC;Hybrid Classifier - Monolingual;37552;11756;;
+GRANTS;Hybrid Classifier - Monolingual;8788;4182;;
+MEDLINE;Minh ver1;69603;26464;;
+ANI;Minh ver1;62286;19740;;
+ANI SUPP;Minh ver1;33483;12061;;
+ANI CEC;Minh ver1;69245;23137;;
+GRANTS;Minh ver1;15673;11805;;

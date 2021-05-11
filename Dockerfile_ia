@@ -1,0 +1,58 @@
+FROM ubuntu:20.04
+
+# Install the repo that has Python 3.6 distributions
+RUN apt-get -y update && \
+	apt-get install -y software-properties-common --no-install-recommends && \
+	add-apt-repository ppa:deadsnakes/ppa && \
+	apt-get -y update
+
+# Set up python3.6 repo info
+RUN	apt-get install -y  \
+# For the classifier
+		python3.6-dev gcc ca-certificates \
+# An HTTP server
+		nginx \
+# Some utils for manual debugging
+		vim curl wget
+
+# Get python packages
+
+COPY requirements_ia.txt /tmp/requirements_ia.txt
+
+RUN wget https://bootstrap.pypa.io/get-pip.py && \
+	python3.6 get-pip.py && \
+	pip3.6 install virtualenv && \
+    mkdir -p /opt/program/venv && \
+    virtualenv -p /usr/bin/python3.6 /opt/program/venv
+
+RUN /bin/bash -c "source /opt/program/venv/bin/activate && \
+    apt-get install -y build-essential && \
+    pip install Cython==0.29.21 && \
+    pip install -r /tmp/requirements_ia.txt"
+
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    apt-get install -y unzip && \
+    unzip awscliv2.zip
+RUN ./aws/install
+
+RUN apt-get autoremove -y && \
+    rm -rf /root/.cache
+
+
+
+# Set some environment variables. PYTHONUNBUFFERED keeps Python from buffering our standard
+# output stream, which means that logs can be delivered to the user quickly. PYTHONDONTWRITEBYTECODE
+# keeps Python from writing the .pyc files which are unnecessary in this case. We also update
+# PATH so that the train and serve programs are found when the container is invoked.
+
+ENV PYTHONUNBUFFERED=TRUE
+ENV PYTHONDONTWRITEBYTECODE=TRUE
+ENV PATH="/opt/program:${PATH}"
+
+# Set up the program in the image
+COPY container/* *.py /opt/program/
+
+WORKDIR /opt/program
+ADD dicts dicts
+
+

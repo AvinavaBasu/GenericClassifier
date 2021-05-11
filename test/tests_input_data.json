@@ -1,0 +1,14 @@
+[
+  {"Example_org_strings": {
+    "input_file": "INPUT_FILE",
+    "expected_file": "EXPECTED_FILE",
+    "success_output_file": "SUCCESS_FILE",
+    "failure_output_file": "FAILURE_FILE"}
+  },
+  {"100k": {
+    "input_file": "INPUT_FILE_100k",
+    "expected_file": "EXPECTED_FILE_100k",
+    "success_output_file": "SUCCESS_FILE_100k",
+    "failure_output_file": "FAILURE_FILE_100k"}
+  }
+]

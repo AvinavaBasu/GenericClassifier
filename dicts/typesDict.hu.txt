@@ -1,0 +1,59 @@
+Tudományos Osztály
+Tudományos egység
+Akadémia
+Ág
+Központ
+központok
+Központi Intézet
+Szék
+Gyermekkórház
+Klinika
+Clinica
+Klinikai osztály
+Főiskola
+Tanszék
+osztály, részleg, minisztérium, szak
+Osztály, részleg, minisztérium, szak
+Departmento
+Osztályok
+Mélység.
+Fegyelem
+Divisão
+Osztály
+Divison
+Facultat
+Kar
+A Tanszéktől
+Diplomás Intézet
+Elvégezni az iskolát
+Csoport
+Kórház
+Intézet
+Intézetek
+Labor
+Labor.
+Laboratories
+Laboratórium
+Minisztérium
+Városi Intézet
+Nemzeti Központ
+Nemzeti Központ
+Nemzeti Intézet
+Nemzeti Intézetek
+Nemzeti laboratórium
+Hivatal
+Program
+Kutatóközpont
+Kutatóközpont
+Kutatóintézet
+Kutatási egység
+Iskola
+Szolgáltatás
+Szakember klinika
+Képzési osztály
+Egység
+Egyesül
+egységek
+Egyetemi klinikák
+Egyetemi Tanszék
+Egyetemi Kórház
